@@ -35,9 +35,14 @@ apiClient.interceptors.response.use(
     (response) => response,
     (error) => {
         if (error.response?.status === 401) {
-            // Unauthorized - redirect to login
             if (typeof window !== 'undefined') {
-                window.location.href = '/login'
+                try {
+                    const currentPath = window.location.pathname
+                    if (currentPath !== '/login') {
+                        window.location.href = '/login'
+                    }
+                } catch {
+                }
             }
         }
         return Promise.reject(error)
@@ -46,8 +51,6 @@ apiClient.interceptors.response.use(
 
 export async function getCsrfCookie() {
     // Explicitly ensure credentials are included
-    await axios.get(`${API_DOMAIN}/sanctum/csrf-cookie`, { 
-        withCredentials: true 
-    })
+    await axios.get(`${API_DOMAIN}/sanctum/csrf-cookie`)
 }
 
