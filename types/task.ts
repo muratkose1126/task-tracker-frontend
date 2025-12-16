@@ -6,7 +6,7 @@ export type TaskPriority = 'low' | 'medium' | 'high'
 
 export interface Task {
   id: number
-  project_id: number
+  list_id: number
   user_id: number
   title: string
   description: string | null
@@ -54,8 +54,6 @@ export interface TaskWithRelations extends Task {
 
 // Form Types
 export interface TaskFormData {
-  project_id: number
-  user_id: number
   title: string
   description?: string
   status?: TaskStatus
