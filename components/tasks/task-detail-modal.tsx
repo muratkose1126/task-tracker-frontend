@@ -123,8 +123,6 @@ export function TaskDetailModal({
             <div className="border-t pt-4">
               <h3 className="font-semibold mb-4">Edit Task</h3>
               <TaskForm
-                projectId={task.project_id}
-                userId={task.user_id}
                 onSubmit={handleUpdate}
                 loading={updateTask.isPending}
               />

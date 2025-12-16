@@ -13,8 +13,8 @@ interface TaskCardProps {
 }
 
 export function TaskCard({ task }: TaskCardProps) {
-  const priority = priorityConfig[task.priority as keyof typeof priorityConfig];
-  const status = statusConfig[task.status as keyof typeof statusConfig];
+  const priority = priorityConfig[(task.priority || 'medium') as keyof typeof priorityConfig];
+  const status = statusConfig[(task.status || 'todo') as keyof typeof statusConfig];
 
   return (
     <Card className="group relative overflow-hidden border-0 bg-card/50 hover:shadow-lg transition-all duration-200 hover:-translate-y-0.5">

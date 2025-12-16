@@ -46,8 +46,6 @@ const taskFormSchema = z.object({
 });
 
 interface TaskFormProps {
-  projectId: number;
-  userId: number;
   onSubmit: (data: TaskFormData) => void | Promise<void>;
   loading?: boolean;
   initialData?: Task | null;
@@ -55,8 +53,6 @@ interface TaskFormProps {
 }
 
 export function TaskForm({
-  projectId,
-  userId,
   onSubmit,
   loading = false,
   initialData = null,
@@ -89,8 +85,6 @@ export function TaskForm({
   const handleSubmit = async (values: z.infer<typeof taskFormSchema>) => {
     try {
       await onSubmit({
-        project_id: projectId,
-        user_id: userId,
         title: values.title,
         description: values.description || undefined,
         status: values.status as TaskStatus,

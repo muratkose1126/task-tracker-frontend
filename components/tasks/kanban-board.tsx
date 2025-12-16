@@ -6,12 +6,17 @@
 
 import { Card } from "@/components/ui/card";
 import { TaskCard } from "@/components/tasks/task-card";
+import { QuickAddTask } from "@/components/tasks/quick-add-task";
 import { ListTodo, Clock, CheckCircle2 } from "lucide-react";
 import type { Task } from "@/types";
+import type { ReactNode } from "react";
 
 interface KanbanBoardProps {
   tasks: Task[];
   onTaskClick?: (taskId: number) => void;
+  listId?: string | null;
+  quickAddOpen?: boolean;
+  onTaskCreated?: () => void;
 }
 
 const columns = [
@@ -41,7 +46,13 @@ const columns = [
   },
 ];
 
-export function KanbanBoard({ tasks, onTaskClick }: KanbanBoardProps) {
+export function KanbanBoard({
+  tasks,
+  onTaskClick,
+  listId,
+  quickAddOpen = false,
+  onTaskCreated,
+}: KanbanBoardProps) {
   return (
     <div className="grid gap-6 md:grid-cols-3">
       {columns.map((column) => {
@@ -65,7 +76,17 @@ export function KanbanBoard({ tasks, onTaskClick }: KanbanBoardProps) {
 
             {/* Tasks */}
             <div className="space-y-2.5 min-h-[400px]">
-              {columnTasks.length === 0 ? (
+              {/* QuickAdd in all columns */}
+              {listId && (
+                <QuickAddTask
+                  listId={String(listId)}
+                  onTaskCreated={onTaskCreated}
+                  initialOpen={quickAddOpen}
+                  defaultStatus={column.id}
+                />
+              )}
+              
+              {columnTasks.length === 0 && !listId ? (
                 <div className="flex items-center justify-center h-40 rounded-lg border-2 border-dashed border-muted-foreground/20">
                   <p className="text-sm text-muted-foreground">No tasks</p>
                 </div>
