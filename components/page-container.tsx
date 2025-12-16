@@ -32,3 +32,5 @@ export function PageHeader({ title, description, action }: PageHeaderProps) {
     </div>
   );
 }
+
+export default PageContainer;
