@@ -4,11 +4,28 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { tasksApi } from '@/lib/tasks'
 import type { Task, TaskFormData, TaskWithRelations, TaskComment, CommentFormData, TaskAttachment } from '@/types'
 
-export function useProjectTasks(projectId: number | null) {
+export function useTaskLists(spaceId: string) {
+  return useQuery({
+    queryKey: ['task-lists', spaceId],
+    queryFn: () => tasksApi.getSpaceLists(spaceId),
+    enabled: !!spaceId,
+    staleTime: 60 * 1000,
+  })
+}
+
+export function useListTasks(listId: number | null) {
   return useQuery<Task[]>({
-    queryKey: ['tasks', 'project', projectId],
-    queryFn: () => projectId ? tasksApi.getProjectTasks(projectId) : Promise.resolve([]),
-    enabled: !!projectId,
+    queryKey: ['tasks', 'list', listId],
+    queryFn: () => listId ? tasksApi.getListTasks(listId) : Promise.resolve([]),
+    enabled: !!listId,
+    staleTime: 60 * 1000,
+  })
+}
+
+export function useAllWorkspaceTasks() {
+  return useQuery<Task[]>({
+    queryKey: ['tasks', 'all'],
+    queryFn: () => tasksApi.getAllTasks(),
     staleTime: 60 * 1000,
   })
 }
@@ -35,11 +52,11 @@ export function useCreateTask() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: ({ projectId, data }: { projectId: number; data: TaskFormData }) =>
-      tasksApi.createTask(projectId, data),
-    onSuccess: (task: Task, { projectId }) => {
-      // Update project tasks list
-      queryClient.setQueryData<Task[]>(['tasks', 'project', projectId], (old = []) => [task, ...old])
+    mutationFn: ({ listId, data }: { listId: number; data: TaskFormData }) =>
+      tasksApi.createTask(listId, data),
+    onSuccess: (task: Task, { listId }) => {
+      // Update list tasks cache
+      queryClient.setQueryData<Task[]>(['tasks', 'list', listId], (old = []) => [task, ...old])
     },
   })
 }
@@ -55,7 +72,7 @@ export function useUpdateTask() {
         old.map((t) => (t.id === task.id ? task : t))
       )
       queryClient.setQueryData(['tasks', task.id], task)
-      queryClient.invalidateQueries({ queryKey: ['tasks', 'project', task.project_id] })
+      queryClient.invalidateQueries({ queryKey: ['tasks', 'list', task.list_id] })
     },
   })
 }
@@ -67,6 +84,42 @@ export function useDeleteTask() {
     mutationFn: (id: number) => tasksApi.deleteTask(id),
     onSuccess: (_data, id: number) => {
       queryClient.setQueryData<Task[]>(['tasks'], (old = []) => old.filter((t) => t.id !== id))
+      queryClient.invalidateQueries({ queryKey: ['tasks'] })
+    },
+  })
+}
+
+export function useReorderTasks() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: ({ listId, tasks }: { listId: string | number; tasks: Task[] }) =>
+      tasksApi.reorderTasks(listId, tasks.map((t, idx) => ({ id: t.id, order: idx }))),
+    onSuccess: (_, { listId }) => {
+      queryClient.invalidateQueries({ queryKey: ['tasks', 'list', listId] })
+    },
+  })
+}
+
+export function useUpdateList() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: ({ id, data }: { id: string; data: { name?: string } }) =>
+      tasksApi.updateList(id, data),
+    onSuccess: (list) => {
+      queryClient.invalidateQueries({ queryKey: ['task-lists'] })
+    },
+  })
+}
+
+export function useDeleteList() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (id: string) => tasksApi.deleteList(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['task-lists'] })
       queryClient.invalidateQueries({ queryKey: ['tasks'] })
     },
   })
@@ -145,7 +198,13 @@ export function useDeleteTaskAttachment() {
 }
 
 // All Tasks (for dashboard)
-export function useTasks() {
+export function useTasks(listId?: string | null) {
+  // If listId is provided (string), use it for list tasks
+  if (listId) {
+    return useListTasks(Number(listId));
+  }
+  
+  // Otherwise return all tasks
   return useQuery<Task[]>({
     queryKey: ['tasks'],
     queryFn: () => tasksApi.getAllTasks(),

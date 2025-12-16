@@ -1,15 +1,30 @@
 import { apiClient } from './api'
-import type { Task, TaskFormData, TaskWithRelations, TaskComment, CommentFormData, TaskAttachment } from '@/types'
+import type { Task, TaskFormData, TaskWithRelations, TaskComment, CommentFormData, TaskAttachment, TaskList } from '@/types'
 
 export const tasksApi = {
-  // Tasks - All operations are project-scoped
+  // Lists
+  async getSpaceLists(spaceId: string): Promise<TaskList[]> {
+    const response = await apiClient.get<{ data: TaskList[] }>(`/spaces/${spaceId}/lists`)
+    return response.data.data
+  },
+
+  async updateList(id: string, data: { name?: string }): Promise<TaskList> {
+    const response = await apiClient.patch<{ data: TaskList }>(`/lists/${id}`, data)
+    return response.data.data
+  },
+
+  async deleteList(id: string): Promise<void> {
+    await apiClient.delete(`/lists/${id}`)
+  },
+
+  // Tasks - All operations are list-scoped
   async getAllTasks(): Promise<Task[]> {
     const response = await apiClient.get<{ data: Task[] }>('/tasks')
     return response.data.data
   },
 
-  async getProjectTasks(projectId: number): Promise<Task[]> {
-    const response = await apiClient.get<{ data: Task[] }>(`/projects/${projectId}/tasks`)
+  async getListTasks(listId: number): Promise<Task[]> {
+    const response = await apiClient.get<{ data: Task[] }>(`/lists/${listId}/tasks`)
     return response.data.data
   },
 
@@ -23,8 +38,8 @@ export const tasksApi = {
     return response.data.data
   },
 
-  async createTask(projectId: number, data: TaskFormData): Promise<Task> {
-    const response = await apiClient.post<{ data: Task }>(`/projects/${projectId}/tasks`, {
+  async createTask(listId: number, data: TaskFormData): Promise<Task> {
+    const response = await apiClient.post<{ data: Task }>(`/lists/${listId}/tasks`, {
       title: data.title,
       description: data.description,
       status: data.status,
@@ -49,7 +64,11 @@ export const tasksApi = {
     await apiClient.delete(`/tasks/${id}`)
   },
 
-  // Task Comments - Shallow routing (no project ID needed)
+  async reorderTasks(listId: string | number, tasks: Array<{ id: number; order: number }>): Promise<void> {
+    await apiClient.post(`/lists/${listId}/tasks/reorder`, { tasks })
+  },
+
+  // Task Comments - Shallow routing
   async getTaskComments(taskId: number): Promise<TaskComment[]> {
     const response = await apiClient.get<{ data: TaskComment[] }>(`/tasks/${taskId}/comments`)
     return response.data.data
@@ -67,7 +86,7 @@ export const tasksApi = {
     await apiClient.delete(`/comments/${commentId}`)
   },
 
-  // Task Attachments - Shallow routing (no project ID needed)
+  // Task Attachments - Shallow routing
   async getTaskAttachments(taskId: number): Promise<TaskAttachment[]> {
     const response = await apiClient.get<{ data: TaskAttachment[] }>(`/tasks/${taskId}/attachments`)
     return response.data.data

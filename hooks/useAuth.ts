@@ -3,6 +3,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useRouter } from 'next/navigation'
 import { authApi } from '@/lib/auth'
+import { listWorkspaces } from '@/lib/workspaces'
 import { useAuthStore } from '@/store/authStore'
 import type { User } from '@/types'
 
@@ -13,11 +14,28 @@ export function useLogin() {
 
   return useMutation({
     mutationFn: authApi.login,
-    onSuccess: (data) => {
+    onSuccess: async (data) => {
       setAuth(data.user)
       // hydrate currentUser cache to avoid duplicate fetch
       queryClient.setQueryData(['currentUser'], data.user as User)
-      router.push('/dashboard')
+      
+      // Get workspaces and redirect to last visited path
+      try {
+        const workspaces = await listWorkspaces()
+        if (workspaces.length > 0) {
+          const firstWorkspace = workspaces[0]
+          const lastPath = firstWorkspace.last_visited_path
+          if (lastPath) {
+            router.push(lastPath)
+          } else {
+            router.push(`/workspaces/${firstWorkspace.id}`)
+          }
+        } else {
+          router.push('/dashboard')
+        }
+      } catch {
+        router.push('/dashboard')
+      }
     },
   })
 }
@@ -29,10 +47,27 @@ export function useRegister() {
 
   return useMutation({
     mutationFn: authApi.register,
-    onSuccess: (data) => {
+    onSuccess: async (data) => {
       setAuth(data.user)
       queryClient.setQueryData(['currentUser'], data.user as User)
-      router.push('/dashboard')
+      
+      // Get workspaces and redirect to last visited path
+      try {
+        const workspaces = await listWorkspaces()
+        if (workspaces.length > 0) {
+          const firstWorkspace = workspaces[0]
+          const lastPath = firstWorkspace.last_visited_path
+          if (lastPath) {
+            router.push(lastPath)
+          } else {
+            router.push(`/workspaces/${firstWorkspace.id}`)
+          }
+        } else {
+          router.push('/dashboard')
+        }
+      } catch {
+        router.push('/dashboard')
+      }
     },
   })
 }
