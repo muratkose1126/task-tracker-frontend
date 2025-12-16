@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { QueryProvider } from "@/components/providers/query-provider";
+import { Toaster } from "@/components/ui/sonner";
 import { AuthInit } from "./auth-init";
 
 const geistSans = Geist({
@@ -16,7 +17,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "Task Tracker",
-  description: "Manage your projects and tasks efficiently",
+  description: "Manage your tasks efficiently",
 };
 
 export default function RootLayout({
@@ -31,6 +32,7 @@ export default function RootLayout({
       >
         <QueryProvider>
           <AuthInit>{children}</AuthInit>
+          <Toaster />
         </QueryProvider>
       </body>
     </html>
