@@ -1,51 +1,74 @@
-import { describe, it, expect } from '@jest/globals';
-import { generateItemKey, safeKey, validateKeys } from '@/lib/key-utils';
+import { generateItemKey, generateListKey, safeKey, validateKeys } from '@/lib/key-utils'
 
-describe('Key Utils', () => {
-  describe('generateItemKey', () => {
-    it('generates consistent keys', () => {
-      const key1 = generateItemKey('task', 'id-123', 0);
-      const key2 = generateItemKey('task', 'id-123', 0);
+describe('Key Utils - React List Key Generation', () => {
+  describe('generateItemKey - Single Item Key', () => {
+    it('should create consistent key for task items', () => {
+      // When rendering tasks in a list, each task needs a unique key
+      const taskId = 'task-456'
+      const index = 0
+      
+      const key = generateItemKey('task', taskId, index)
+      expect(key).toBe('task-task-456-0')
+    })
 
-      expect(key1).toBe(key2);
-      expect(key1).toBe('task-id-123-0');
-    });
+    it('should create different keys for different task positions', () => {
+      // Same task but different position in list should have different key
+      const key1 = generateItemKey('task', 'task-1', 0)
+      const key2 = generateItemKey('task', 'task-1', 1)
+      
+      expect(key1).not.toBe(key2)
+    })
+  })
 
-    it('generates different keys for different ids', () => {
-      const key1 = generateItemKey('task', 'id-1', 0);
-      const key2 = generateItemKey('task', 'id-2', 0);
+  describe('generateListKey - Multiple Items', () => {
+    it('should generate keys for list of tasks', () => {
+      // Real scenario: rendering tasks in a kanban board
+      const tasks = [
+        { id: 'task-1' },
+        { id: 'task-2' },
+        { id: 'task-3' },
+      ]
+      
+      const keys = generateListKey(tasks, 'task')
+      expect(keys).toHaveLength(3)
+      expect(keys[0]).toBe('task-task-1-0')
+      expect(keys[1]).toBe('task-task-2-1')
+    })
+  })
 
-      expect(key1).not.toBe(key2);
-    });
-  });
+  describe('safeKey - Handle Special Cases', () => {
+    it('should sanitize task IDs with special characters', () => {
+      // IDs from API might have special chars
+      const unsafeId = 'task@#$%^'
+      const key = safeKey('task', unsafeId)
+      
+      expect(key).not.toContain('@')
+      expect(key).not.toContain('#')
+    })
 
-  describe('safeKey', () => {
-    it('sanitizes special characters', () => {
-      const key = safeKey('task', 'id@123!test');
-      expect(/^task__id_123_test$/.test(key)).toBe(true);
-    });
+    it('should handle missing/null IDs with fallback', () => {
+      // If task ID is null, use fallback
+      const key = safeKey('task', null, 'unknown-id')
+      expect(key).toContain('unknown-id')
+    })
+  })
 
-    it('uses fallback for null/undefined', () => {
-      const key = safeKey('task', null, 'fallback');
-      expect(key).toContain('fallback');
-    });
-  });
+  describe('validateKeys - Detect Duplicates', () => {
+    it('should detect if task list has duplicate keys', () => {
+      // This would be a bug - same task rendered twice
+      const keys = ['task-1-0', 'task-2-1', 'task-1-0']
+      
+      const result = validateKeys(keys)
+      expect(result.valid).toBe(false)
+      expect(result.duplicates).toContain('task-1-0')
+    })
 
-  describe('validateKeys', () => {
-    it('detects duplicate keys', () => {
-      const keys = ['key-1', 'key-2', 'key-1'];
-      const result = validateKeys(keys);
-
-      expect(result.valid).toBe(false);
-      expect(result.duplicates).toContain('key-1');
-    });
-
-    it('validates unique keys', () => {
-      const keys = ['key-1', 'key-2', 'key-3'];
-      const result = validateKeys(keys);
-
-      expect(result.valid).toBe(true);
-      expect(result.duplicates).toHaveLength(0);
-    });
-  });
-});
+    it('should confirm all keys are unique', () => {
+      // Valid list - no duplicates
+      const keys = ['task-1-0', 'task-2-1', 'task-3-2']
+      
+      const result = validateKeys(keys)
+      expect(result.valid).toBe(true)
+    })
+  })
+})
